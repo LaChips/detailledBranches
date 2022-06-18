@@ -2,17 +2,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-void    readOutput(char *command, FILE **output, char ***arr, int *currentBranchIndex) {
+void    readOutput(char *command, char ***arr, int *currentBranchIndex) {
+    FILE    *output;
     int     i = 0;
     char    c = 0;
     int     character_count = 0;
     int     branches_count = 0;
-    if (0 == (*output = (FILE*)popen(command, "r")))
+    if (0 == (output = (FILE*)popen(command, "r")))
     {
         perror("popen() failed.");
         exit(EXIT_FAILURE);
     }
-    while (fread(&c, sizeof(c), 1, *output))
+    while (fread(&c, sizeof(c), 1, output))
     {
         if ((*arr)[branches_count] == NULL) {
             (*arr)[branches_count] = malloc(sizeof(char) * 200);
@@ -29,6 +30,7 @@ void    readOutput(char *command, FILE **output, char ***arr, int *currentBranch
         }
     }
     (*arr)[branches_count] = NULL;
+    pclose(output);
 }
 
 int   isBranchInArray(char *branchName, char ***mergedInMaster) {
@@ -64,16 +66,12 @@ void    freeBranches(char ***branches) {
 }
 
 int main(int ac, char **av) {
-    FILE    *allBranchesOutput;
-    FILE    *mergedInMasterOutput;
     char    **branchesMergedInMaster = calloc(200, sizeof(char*));
     char    **allBranches = calloc(200, sizeof(char*));
     int     currentBranchIndex = -1;
 
-    readOutput("git branch --merge master", &mergedInMasterOutput, &branchesMergedInMaster, &currentBranchIndex);
-    readOutput("git branch", &allBranchesOutput, &allBranches, &currentBranchIndex);
-    pclose(allBranchesOutput);
-    pclose(mergedInMasterOutput);
+    readOutput("git branch --merge master", &branchesMergedInMaster, &currentBranchIndex);
+    readOutput("git branch", &allBranches, &currentBranchIndex);
     //printBranches(&branchesMergedInMaster);
     //printBranches(&allBranches);
     printMergedBranches(&allBranches, &branchesMergedInMaster, &currentBranchIndex);
