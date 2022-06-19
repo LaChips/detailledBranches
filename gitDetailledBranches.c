@@ -12,7 +12,7 @@ void    readCommandOutput(char *command, char **arr) {
         perror("popen() failed.");
         exit(EXIT_FAILURE);
     }
-    while (fread(&c, sizeof(c), 1, output))
+    while (fread(&c, sizeof(c), 1, output) && i < 127)
     {
         (*arr)[i] = c;
         i++;
@@ -35,19 +35,16 @@ void    readBranchesOutput(char *command, char ***arr) {
     while (fread(&c, sizeof(c), 1, output))
     {
         if ((*arr)[branches_count] == NULL) {
-            (*arr)[branches_count] = malloc(sizeof(char) * 200);
+            (*arr)[branches_count] = malloc(sizeof(char) * 256);
         }
         if (c == '\n') {
             (*arr)[branches_count][character_count] = '\0';
             branches_count++;
-            character_count = -1;
+            character_count = 0;
         } else if (c != ' ' && c != '*') {
             (*arr)[branches_count][character_count] = c;
+            character_count++;
         }
-        else {
-            continue;
-        }
-        character_count++;
     }
     (*arr)[branches_count] = NULL;
     pclose(output);
@@ -80,7 +77,7 @@ void    unescape(char **unescapedCommand, const char *str) {
 }
 
 void    printMergedBranches(char ***allBranches, char ***mergedInMaster) {
-    char    *branchLastLog = calloc(1024, sizeof(char));
+    char    *branchLastLog = calloc(128, sizeof(char));
     char    *command = NULL;
     char    *unescapedCommand = NULL;
 
@@ -92,9 +89,8 @@ void    printMergedBranches(char ***allBranches, char ***mergedInMaster) {
         strcat(command, (*allBranches)[i]);
         strcat(command, unescapedCommand);
         readCommandOutput(command, &branchLastLog);
-        
         if (isBranchInArray((*allBranches)[i], mergedInMaster) == 1) {
-            printf("%-30s merged in master ", (*allBranches)[i]);
+            printf("%-30.30s merged in master ", (*allBranches)[i]);
         } else {
             printf("%-48s", (*allBranches)[i]);
         }
