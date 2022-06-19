@@ -32,7 +32,7 @@ void    readBranchesOutput(char *command, char ***arr) {
         perror("popen() failed.");
         exit(EXIT_FAILURE);
     }
-    while (i < 1023 && fread(&c, sizeof(c), 1, output))
+    while (fread(&c, sizeof(c), 1, output))
     {
         if ((*arr)[branches_count] == NULL) {
             (*arr)[branches_count] = malloc(sizeof(char) * 200);
@@ -40,11 +40,14 @@ void    readBranchesOutput(char *command, char ***arr) {
         if (c == '\n') {
             (*arr)[branches_count][character_count] = '\0';
             branches_count++;
-            character_count = 0;
+            character_count = -1;
         } else if (c != ' ' && c != '*') {
             (*arr)[branches_count][character_count] = c;
-            character_count++;
         }
+        else {
+            continue;
+        }
+        character_count++;
     }
     (*arr)[branches_count] = NULL;
     pclose(output);
