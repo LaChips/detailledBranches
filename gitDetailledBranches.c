@@ -12,7 +12,7 @@ void    readCommandOutput(char *command, char **arr) {
         perror("popen() failed.");
         exit(EXIT_FAILURE);
     }
-    while (fread(&c, sizeof(c), 1, output) && i < 127)
+    while (fread(&c, sizeof(c), 1, output) && i < 2047)
     {
         (*arr)[i] = c;
         i++;
@@ -76,28 +76,40 @@ void    unescape(char **unescapedCommand, const char *str) {
     (*unescapedCommand)[j] = '\0';
 }
 
-void    printMergedBranches(char ***allBranches, char ***mergedInMaster) {
-    char    *branchLastLog = calloc(128, sizeof(char));
+void    printMergedBranch(char **command, char **branch, int isBranchMerged, int shouldDelete, char **branchLastLog) {
+    if (isBranchMerged == 1 && shouldDelete == 1 && strcmp(*branch, "master") != 0) {
+        *command = strcpy(*command, "git branch -d ");
+        *command = strcat(*command, *branch);
+        system(*command);
+        printf("\n\033[1;37mBranch : \033[1;32m%s\t\033[1;31m[DELETED]\n", *branch);
+    } else {
+        printf("\n\033[1;37mBranch : \033[1;32m%s\n", *branch);
+    }
+    printf("\033[1;37mMerged in master : ");
+    if (isBranchMerged == 1) {
+        printf("\033[0;32mYes\n");
+    } else {
+        printf("\033[0;31mNo\n");
+    }
+    printf("\033[1;37mLast commit : ");
+    printf("\033[0;37m%s", *branchLastLog);
+    printf("\n");
+}
+
+void    printMergedBranches(char ***allBranches, char ***mergedInMaster, int shouldDelete) {
+    char    *branchLastLog = calloc(2048, sizeof(char));
     char    *command = NULL;
-    char    *unescapedCommand = NULL;
+    int     isBranchMerged = 0;
 
     for (int i = 0; (*allBranches)[i] != NULL; i++) {
         command = malloc((strlen((*allBranches)[i]) + 150) * sizeof(char));
-        unescapedCommand = malloc(50 * sizeof(char));
-        unescape(&unescapedCommand, " -1 --pretty=format:\"%%h - %%an, %%ar : %%s\"\0");
-        strcpy(command, "git log \0");
+        strcpy(command, "git log ");
         strcat(command, (*allBranches)[i]);
-        strcat(command, unescapedCommand);
+        strcat(command, " -1\0");
         readCommandOutput(command, &branchLastLog);
-        if (isBranchInArray((*allBranches)[i], mergedInMaster) == 1) {
-            printf("%-30.30s merged in master ", (*allBranches)[i]);
-        } else {
-            printf("%-48s", (*allBranches)[i]);
-        }
-        printf("%s", branchLastLog);
-        printf("\n");
+        isBranchMerged = isBranchInArray((*allBranches)[i], mergedInMaster);
+        printMergedBranch(&command, &(*allBranches)[i], isBranchMerged, shouldDelete, &branchLastLog);
         free(command);
-        free(unescapedCommand);
     }
     free(branchLastLog);
 }
@@ -112,12 +124,14 @@ void    freeBranches(char ***branches) {
 int main(int ac, char **av) {
     char    **branchesMergedInMaster = calloc(200, sizeof(char*));
     char    **allBranches = calloc(200, sizeof(char*));
+    int     shouldRemove = 0;
 
+    if (av[1] != NULL && (strcmp(av[1], "-d") == 0 || strcmp(av[1], "--delete") == 0)) {
+        shouldRemove = 1;
+    }
     readBranchesOutput("git branch --merge master", &branchesMergedInMaster);
     readBranchesOutput("git branch", &allBranches);
-    //printBranches(&branchesMergedInMaster);
-    //printBranches(&allBranches);
-    printMergedBranches(&allBranches, &branchesMergedInMaster);
+    printMergedBranches(&allBranches, &branchesMergedInMaster, shouldRemove);
     freeBranches(&branchesMergedInMaster);
     freeBranches(&allBranches);
     return 0;
