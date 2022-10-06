@@ -59,23 +59,6 @@ int   isBranchInArray(char *branchName, char ***mergedInMaster) {
     return 0;
 }
 
-void    printBranches(char ***allBranches) {
-    for (int i = 0; (*allBranches)[i] != NULL; i++) {
-        printf("%s\n", (*allBranches)[i]);
-    }
-}
-
-void    unescape(char **unescapedCommand, const char *str) {
-    int     j = 0;
-    for (int i = 0; str[i] != '\0'; i++) {
-        if (i > 0 && str[i - 1] == '%' && str[i] == '%') {
-            i++;
-        }
-        (*unescapedCommand)[j++] = str[i];
-    }
-    (*unescapedCommand)[j] = '\0';
-}
-
 void    printMergedBranch(char **command, char **branch, int isBranchMerged, int shouldDelete, char **branchLastLog) {
     if (isBranchMerged == 1 && shouldDelete == 1 && strcmp(*branch, "master") != 0) {
         *command = strcpy(*command, "git branch -d ");
